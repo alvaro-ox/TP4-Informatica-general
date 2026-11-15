@@ -1,0 +1,24 @@
+/* Estilos complementarios retro arcade sobre Tailwind CSS */
+
+/* Fuente pixelada reservada para titulos, logo y distintivos */
+.font-arcade {
+    font-family: 'Press Start 2P', monospace;
+}
+
+/* Fondo sutil con grilla retro de baja opacidad para mantener la legibilidad */
+.arcade-fondo {
+    background-image:
+        linear-gradient(to right, rgba(34, 211, 238, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(217, 70, 239, 0.05) 1px, transparent 1px);
+    background-size: 28px 28px;
+}
+
+/* Mejora la legibilidad de numeros alineados en tablas de puntajes */
+.tabular-nums {
+    font-variant-numeric: tabular-nums;
+}
+
+/* Transicion suave para botones y filas interactivas */
+.transicion-suave {
+    transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, color 0.15s ease-in-out, transform 0.1s ease-in-out;
+}

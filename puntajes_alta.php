@@ -1,0 +1,179 @@
+<?php
+// Formulario y procesamiento de alta de puntaje para un jugador
+require_once __DIR__ . '/conexion.php';
+
+$pdo = obtener_conexion();
+$jugadores = $pdo->query('SELECT id_jugador, nombre FROM jugadores ORDER BY nombre ASC')->fetchAll();
+
+$errores = [];
+$id_jugador = filter_input(INPUT_GET, 'id_jugador', FILTER_VALIDATE_INT) ?: 0;
+$p1 = '0';
+$p2 = '0';
+$p3 = '0';
+$fecha = date('Y-m-d');
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $id_jugador = filter_input(INPUT_POST, 'id_jugador', FILTER_VALIDATE_INT) ?: 0;
+    $p1 = trim($_POST['puntaje_juego_1'] ?? '0');
+    $p2 = trim($_POST['puntaje_juego_2'] ?? '0');
+    $p3 = trim($_POST['puntaje_juego_3'] ?? '0');
+    $fecha = trim($_POST['fecha'] ?? '');
+
+    // Verificar que el jugador seleccionado exista en la tabla jugadores
+    $stmt_jug = $pdo->prepare('SELECT id_jugador FROM jugadores WHERE id_jugador = :id');
+    $stmt_jug->execute([':id' => $id_jugador]);
+    if (!$stmt_jug->fetch()) {
+        $errores[] = 'Debes seleccionar un jugador valido.';
+    }
+
+    // Validar los tres puntajes como enteros mayores o iguales a cero
+    $v1 = filter_var($p1, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+    $v2 = filter_var($p2, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+    $v3 = filter_var($p3, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+
+    if ($v1 === false || $v2 === false || $v3 === false) {
+        $errores[] = 'Todos los puntajes deben ser numeros enteros iguales o mayores a 0.';
+    }
+
+    if (!validar_fecha($fecha)) {
+        $errores[] = 'La fecha ingresada no es valida.';
+    }
+
+    if (empty($errores)) {
+        // Calculo automatico del total en el servidor
+        $total = $v1 + $v2 + $v3;
+
+        $stmt = $pdo->prepare(
+            'INSERT INTO puntajes (id_jugador, puntaje_juego_1, puntaje_juego_2, puntaje_juego_3, total, fecha)
+             VALUES (:id_jugador, :p1, :p2, :p3, :total, :fecha)'
+        );
+        $stmt->execute([
+            ':id_jugador' => $id_jugador,
+            ':p1'         => $v1,
+            ':p2'         => $v2,
+            ':p3'         => $v3,
+            ':total'      => $total,
+            ':fecha'      => $fecha,
+        ]);
+
+        establecer_mensaje_flash('exito', 'Puntaje registrado correctamente (Total: ' . $total . ').');
+        redirigir('puntajes.php');
+    }
+}
+
+$titulo_pagina = 'Nuevo Puntaje';
+$pagina_activa = 'alta_puntaje';
+require_once __DIR__ . '/templates/header.php';
+require_once __DIR__ . '/templates/nav.php';
+?>
+
+<div class="max-w-xl mx-auto">
+    <div class="mb-6">
+        <h1 class="font-arcade text-xl text-amber-300 tracking-wide">NUEVO PUNTAJE</h1>
+        <p class="text-sm text-zinc-300 mt-2">Carga los puntajes de los tres juegos; el total se calcula automaticamente.</p>
+    </div>
+
+    <?php if (empty($jugadores)): ?>
+        <div class="rounded border-2 border-amber-400 bg-amber-950 p-6 text-sm font-bold text-amber-100 shadow-[4px_4px_0px_#fbbf24]">
+            No hay jugadores registrados todavia. Primero debes <a href="alta.php" class="underline text-cyan-300">dar de alta un jugador</a> antes de cargar puntajes.
+        </div>
+    <?php else: ?>
+        <?php if (!empty($errores)): ?>
+            <div class="mb-6 rounded border-2 border-rose-400 bg-rose-950 p-4 text-sm font-bold text-rose-100 shadow-[4px_4px_0px_#fb7185]">
+                <ul class="list-disc list-inside space-y-1">
+                    <?php foreach ($errores as $error): ?>
+                        <li><?php echo limpiar_texto($error); ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        <?php endif; ?>
+
+        <form method="post" action="puntajes_alta.php" class="rounded border-2 border-cyan-400 bg-zinc-900 p-6 space-y-5 shadow-[6px_6px_0px_#d946ef]">
+            <div>
+                <label for="id_jugador" class="block text-xs font-bold uppercase tracking-wider text-cyan-300 mb-1.5">Jugador</label>
+                <select
+                    id="id_jugador"
+                    name="id_jugador"
+                    required
+                    class="w-full rounded border-2 border-zinc-600 bg-zinc-950 px-3 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none"
+                >
+                    <option value="">Selecciona un jugador...</option>
+                    <?php foreach ($jugadores as $jug): ?>
+                        <option value="<?php echo (int) $jug['id_jugador']; ?>" <?php echo ((int) $jug['id_jugador'] === $id_jugador) ? 'selected' : ''; ?>>
+                            <?php echo limpiar_texto($jug['nombre']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <label for="puntaje_juego_1" class="block text-xs font-bold uppercase tracking-wider text-cyan-300 mb-1.5">Juego 1</label>
+                    <input
+                        type="number"
+                        id="puntaje_juego_1"
+                        name="puntaje_juego_1"
+                        min="0"
+                        required
+                        value="<?php echo limpiar_texto($p1); ?>"
+                        class="w-full rounded border-2 border-zinc-600 bg-zinc-950 px-3 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none"
+                    >
+                </div>
+
+                <div>
+                    <label for="puntaje_juego_2" class="block text-xs font-bold uppercase tracking-wider text-cyan-300 mb-1.5">Juego 2</label>
+                    <input
+                        type="number"
+                        id="puntaje_juego_2"
+                        name="puntaje_juego_2"
+                        min="0"
+                        required
+                        value="<?php echo limpiar_texto($p2); ?>"
+                        class="w-full rounded border-2 border-zinc-600 bg-zinc-950 px-3 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none"
+                    >
+                </div>
+
+                <div>
+                    <label for="puntaje_juego_3" class="block text-xs font-bold uppercase tracking-wider text-cyan-300 mb-1.5">Juego 3</label>
+                    <input
+                        type="number"
+                        id="puntaje_juego_3"
+                        name="puntaje_juego_3"
+                        min="0"
+                        required
+                        value="<?php echo limpiar_texto($p3); ?>"
+                        class="w-full rounded border-2 border-zinc-600 bg-zinc-950 px-3 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none"
+                    >
+                </div>
+            </div>
+
+            <div class="rounded border-2 border-amber-400 bg-zinc-950 px-4 py-3 flex items-center justify-between">
+                <span class="text-xs font-bold uppercase tracking-wider text-zinc-200">Total calculado:</span>
+                <span id="total_preview" class="font-arcade text-lg text-amber-300 tabular-nums">0</span>
+            </div>
+
+            <div>
+                <label for="fecha" class="block text-xs font-bold uppercase tracking-wider text-cyan-300 mb-1.5">Fecha</label>
+                <input
+                    type="date"
+                    id="fecha"
+                    name="fecha"
+                    required
+                    value="<?php echo limpiar_texto($fecha); ?>"
+                    class="w-full rounded border-2 border-zinc-600 bg-zinc-950 px-3 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none"
+                >
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-2">
+                <a href="puntajes.php" class="rounded border-2 border-zinc-500 bg-zinc-800 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-zinc-100 hover:bg-zinc-700 transicion-suave">
+                    Cancelar
+                </a>
+                <button type="submit" class="rounded border-2 border-fuchsia-300 bg-fuchsia-600 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-[3px_3px_0px_#22d3ee] hover:bg-fuchsia-500 transicion-suave">
+                    Guardar Puntaje
+                </button>
+            </div>
+        </form>
+    <?php endif; ?>
+</div>
+
+<?php require_once __DIR__ . '/templates/footer.php'; ?>
