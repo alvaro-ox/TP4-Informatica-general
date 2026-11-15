@@ -58,6 +58,14 @@ function validar_fecha(string $fecha): bool
 }
 
 /**
+ * Lista de personajes disponibles en el videojuego.
+ */
+function lista_personajes(): array
+{
+    return ['perro', 'gato', 'persona'];
+}
+
+/**
  * Guarda un mensaje temporal en sesion para mostrarlo tras una redireccion.
  */
 function establecer_mensaje_flash(string $tipo, string $texto): void

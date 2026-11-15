@@ -5,19 +5,20 @@ Aplicacion web dinamica que implementa un ABM completo (Alta, Baja, Modificacion
 ## Estructura del Proyecto
 
 - `conexion.php`: Configuracion de conexion segura a MySQL mediante PDO (usando `127.0.0.1` y la base `contrareloj_abm`) y funciones auxiliares compartidas.
-- `index.php`: Listado principal de jugadores, busqueda por nombre, conteo de puntajes y acceso a acciones del ABM.
-- `alta.php`: Formulario de registro de nuevos jugadores con validaciones de servidor.
+- `index.php`: Listado principal de jugadores, busqueda por nombre o alias, conteo de puntajes y acceso a acciones del ABM.
+- `alta.php`: Formulario de registro de nuevos jugadores (nombre, alias, edad y fecha) con validaciones de servidor.
 - `editar.php`: Formulario de modificacion de datos de jugadores existentes.
 - `eliminar.php`: Baja de jugadores por POST (eliminacion en cascada de sus puntajes asociados via foreign key).
 - `puntajes.php`: Listado y ranking de puntajes, con filtro por jugador y ordenamiento por total o fecha.
-- `puntajes_alta.php`: Alta de puntajes asociada a un jugador con vista previa y calculo automatico del total.
+- `puntajes_alta.php`: Alta de puntajes asociada a un jugador y a un personaje (perro, gato o persona), con vista previa y calculo automatico del total.
 - `puntajes_editar.php`: Modificacion de puntajes con recalculo automatico del total.
 - `puntajes_eliminar.php`: Baja de puntajes por POST.
 - `templates/`: Plantillas modulares reutilizables (`header.php`, `nav.php`, `footer.php`) incluidas mediante `require_once`.
 - `css/estilos.css`: Estilos retro arcade y soporte para tipografia pixelada (`Press Start 2P`).
 - `database/videojuegos_abm.sql`: Script SQL con la creacion de la base de datos `contrareloj_abm`, tablas relacionales y datos de prueba.
-- `funcional.html`: Memoria tecnica y descriptiva del funcionamiento del proyecto y catalogo de queries SQL.
-- `guia_windows.html`: Guia grafica paso a paso para la instalacion y ejecucion en Windows con XAMPP.
+- `database/migracion_alias_personaje.sql`: Script `ALTER TABLE` para actualizar una base ya importada (agrega `alias` y `personaje`) sin perder datos.
+- `Documento Funcional - ABM contrareloj.pdf`: Memoria tecnica y descriptiva del funcionamiento del proyecto y catalogo de queries SQL (nota: el PDF nombra la base como `videojuegos_abm`; el nombre real usado por el codigo y el `.sql` es `contrareloj_abm`; tampoco incluye aun los campos `alias` y `personaje`).
+- `Guia de Uso en Windows (XAMPP) - ABM contrareloj.pdf`: Guia paso a paso para la instalacion y ejecucion en Windows con XAMPP.
 
 ## Requisitos
 
@@ -37,7 +38,8 @@ Aplicacion web dinamica que implementa un ABM completo (Alta, Baja, Modificacion
 3. **Importar la base de datos**:
    - Abrir `http://localhost/phpmyadmin` en el navegador.
    - Ir a la pestana **Importar**, seleccionar el archivo `database/videojuegos_abm.sql` y ejecutar la importacion.
-   - Esto creara la base de datos `contrareloj_abm`, la tabla `jugadores` (primera tabla), la tabla `puntajes` (segunda tabla vinculada por `id_jugador`) y registros de ejemplo.
+   - Esto creara la base de datos `contrareloj_abm`, la tabla `jugadores` (primera tabla, con `alias`), la tabla `puntajes` (segunda tabla vinculada por `id_jugador`, con `personaje`) y registros de ejemplo.
+   - **Si ya tenias la base importada de una version anterior**, no hace falta borrarla: en phpMyAdmin, pestana **SQL**, ejecutar el contenido de `database/migracion_alias_personaje.sql`.
 
 4. **Verificar credenciales de conexion**:
    - En `conexion.php`, los valores por defecto son:

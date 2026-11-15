@@ -6,17 +6,17 @@ $pdo = obtener_conexion();
 $busqueda = trim($_GET['buscar'] ?? '');
 
 // Consulta de jugadores junto con la cantidad de registros de puntajes asociados
-$sql = 'SELECT j.id_jugador, j.nombre, j.edad, j.fecha, COUNT(p.id_puntaje) AS cantidad_puntajes
+$sql = 'SELECT j.id_jugador, j.nombre, j.alias, j.edad, j.fecha, COUNT(p.id_puntaje) AS cantidad_puntajes
         FROM jugadores j
         LEFT JOIN puntajes p ON j.id_jugador = p.id_jugador';
 $parametros = [];
 
 if ($busqueda !== '') {
-    $sql .= ' WHERE j.nombre LIKE :busqueda';
+    $sql .= ' WHERE j.nombre LIKE :busqueda OR j.alias LIKE :busqueda';
     $parametros[':busqueda'] = '%' . $busqueda . '%';
 }
 
-$sql .= ' GROUP BY j.id_jugador, j.nombre, j.edad, j.fecha
+$sql .= ' GROUP BY j.id_jugador, j.nombre, j.alias, j.edad, j.fecha
           ORDER BY j.id_jugador DESC';
 
 $stmt = $pdo->prepare($sql);
@@ -45,7 +45,7 @@ require_once __DIR__ . '/templates/nav.php';
         type="text"
         name="buscar"
         value="<?php echo limpiar_texto($busqueda); ?>"
-        placeholder="Buscar jugador por nombre..."
+        placeholder="Buscar jugador por nombre o alias..."
         class="flex-1 rounded border-2 border-zinc-600 bg-zinc-900 px-4 py-2.5 text-sm text-white placeholder-zinc-400 focus:border-cyan-400 focus:outline-none"
     >
     <div class="flex gap-2">
@@ -66,6 +66,7 @@ require_once __DIR__ . '/templates/nav.php';
         <thead class="bg-zinc-950 text-cyan-300 uppercase text-xs tracking-wider">
             <tr>
                 <th class="px-4 py-3.5 text-left font-bold">ID</th>
+                <th class="px-4 py-3.5 text-left font-bold">Alias</th>
                 <th class="px-4 py-3.5 text-left font-bold">Nombre</th>
                 <th class="px-4 py-3.5 text-left font-bold">Edad</th>
                 <th class="px-4 py-3.5 text-left font-bold">Fecha</th>
@@ -76,7 +77,7 @@ require_once __DIR__ . '/templates/nav.php';
         <tbody class="divide-y divide-zinc-800">
             <?php if (empty($jugadores)): ?>
                 <tr>
-                    <td colspan="6" class="px-4 py-8 text-center text-zinc-300">
+                    <td colspan="7" class="px-4 py-8 text-center text-zinc-300">
                         No se encontraron jugadores registrados.
                     </td>
                 </tr>
@@ -84,6 +85,7 @@ require_once __DIR__ . '/templates/nav.php';
                 <?php foreach ($jugadores as $jugador): ?>
                     <tr class="hover:bg-zinc-800/80 transicion-suave">
                         <td class="px-4 py-3.5 text-amber-300 font-bold tabular-nums">#<?php echo (int) $jugador['id_jugador']; ?></td>
+                        <td class="px-4 py-3.5 font-bold text-cyan-300"><?php echo limpiar_texto($jugador['alias']); ?></td>
                         <td class="px-4 py-3.5 font-bold text-white"><?php echo limpiar_texto($jugador['nombre']); ?></td>
                         <td class="px-4 py-3.5 text-zinc-200 tabular-nums"><?php echo (int) $jugador['edad']; ?> anos</td>
                         <td class="px-4 py-3.5 text-zinc-200 tabular-nums"><?php echo limpiar_texto($jugador['fecha']); ?></td>

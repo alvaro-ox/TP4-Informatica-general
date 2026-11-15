@@ -4,17 +4,23 @@ require_once __DIR__ . '/conexion.php';
 
 $errores = [];
 $nombre = '';
+$alias = '';
 $edad = '';
 $fecha = date('Y-m-d');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nombre = trim($_POST['nombre'] ?? '');
+    $alias = trim($_POST['alias'] ?? '');
     $edad_raw = trim($_POST['edad'] ?? '');
     $fecha = trim($_POST['fecha'] ?? '');
 
     // Validaciones en el servidor
     if ($nombre === '' || mb_strlen($nombre) > 100) {
         $errores[] = 'El nombre es obligatorio y debe tener como maximo 100 caracteres.';
+    }
+
+    if ($alias === '' || mb_strlen($alias) > 50) {
+        $errores[] = 'El alias es obligatorio y debe tener como maximo 50 caracteres.';
     }
 
     $edad_validada = filter_var($edad_raw, FILTER_VALIDATE_INT, [
@@ -32,9 +38,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Si no hay errores, insertar el registro en la tabla jugadores
     if (empty($errores)) {
         $pdo = obtener_conexion();
-        $stmt = $pdo->prepare('INSERT INTO jugadores (nombre, edad, fecha) VALUES (:nombre, :edad, :fecha)');
+        $stmt = $pdo->prepare('INSERT INTO jugadores (nombre, alias, edad, fecha) VALUES (:nombre, :alias, :edad, :fecha)');
         $stmt->execute([
             ':nombre' => $nombre,
+            ':alias'  => $alias,
             ':edad'   => $edad_validada,
             ':fecha'  => $fecha,
         ]);
@@ -77,6 +84,20 @@ require_once __DIR__ . '/templates/nav.php';
                 required
                 value="<?php echo limpiar_texto($nombre); ?>"
                 placeholder="Ej. Lucas Martinez"
+                class="w-full rounded border-2 border-zinc-600 bg-zinc-950 px-3 py-2.5 text-sm text-white placeholder-zinc-500 focus:border-cyan-400 focus:outline-none"
+            >
+        </div>
+
+        <div>
+            <label for="alias" class="block text-xs font-bold uppercase tracking-wider text-cyan-300 mb-1.5">Alias / Seudonimo</label>
+            <input
+                type="text"
+                id="alias"
+                name="alias"
+                maxlength="50"
+                required
+                value="<?php echo limpiar_texto($alias); ?>"
+                placeholder="Ej. LuMa"
                 class="w-full rounded border-2 border-zinc-600 bg-zinc-950 px-3 py-2.5 text-sm text-white placeholder-zinc-500 focus:border-cyan-400 focus:outline-none"
             >
         </div>
