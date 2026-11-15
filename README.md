@@ -49,3 +49,22 @@ Aplicacion web dinamica que implementa un ABM completo (Alta, Baja, Modificacion
 
 5. **Abrir la aplicacion**:
    - Ingresar desde el navegador a `http://localhost/TP4-Informatica-general/index.php`.
+
+## Puesta en Marcha con Docker (Sin XAMPP)
+
+Si tenes Docker y Docker Compose instalados, podes levantar PHP, Apache, MariaDB y phpMyAdmin con un solo comando desde la raiz del proyecto:
+
+```bash
+docker compose up -d --build
+```
+
+La base de datos `contrareloj_abm` se crea e inicializa automaticamente con [database/videojuegos_abm.sql](database/videojuegos_abm.sql).
+
+- **Aplicacion web**: `http://localhost:8080/index.php`
+- **phpMyAdmin**: `http://localhost:8081`
+
+Para detener los contenedores:
+
+```bash
+docker compose down
+```

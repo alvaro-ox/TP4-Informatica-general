@@ -13,11 +13,6 @@
     background-size: 28px 28px;
 }
 
-/* Mejora la legibilidad de numeros alineados en tablas de puntajes */
-.tabular-nums {
-    font-variant-numeric: tabular-nums;
-}
-
 /* Transicion suave para botones y filas interactivas */
 .transicion-suave {
     transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, color 0.15s ease-in-out, transform 0.1s ease-in-out;

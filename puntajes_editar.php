@@ -37,33 +37,16 @@ $p3 = (string) $puntaje['puntaje_juego_3'];
 $fecha = $puntaje['fecha'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $id_jugador = filter_input(INPUT_POST, 'id_jugador', FILTER_VALIDATE_INT) ?: 0;
-    $p1 = trim($_POST['puntaje_juego_1'] ?? '0');
-    $p2 = trim($_POST['puntaje_juego_2'] ?? '0');
-    $p3 = trim($_POST['puntaje_juego_3'] ?? '0');
-    $fecha = trim($_POST['fecha'] ?? '');
-
-    $stmt_jug = $pdo->prepare('SELECT id_jugador FROM jugadores WHERE id_jugador = :id');
-    $stmt_jug->execute([':id' => $id_jugador]);
-    if (!$stmt_jug->fetch()) {
-        $errores[] = 'Debes seleccionar un jugador valido.';
-    }
-
-    $v1 = filter_var($p1, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
-    $v2 = filter_var($p2, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
-    $v3 = filter_var($p3, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
-
-    if ($v1 === false || $v2 === false || $v3 === false) {
-        $errores[] = 'Todos los puntajes deben ser numeros enteros iguales o mayores a 0.';
-    }
-
-    if (!validar_fecha($fecha)) {
-        $errores[] = 'La fecha ingresada no es valida.';
-    }
+    $resultado = validar_datos_puntaje($pdo, $_POST);
+    $errores = $resultado['errores'];
+    $id_jugador = $resultado['datos']['id_jugador'];
+    $p1 = $resultado['datos']['p1'];
+    $p2 = $resultado['datos']['p2'];
+    $p3 = $resultado['datos']['p3'];
+    $fecha = $resultado['datos']['fecha'];
 
     if (empty($errores)) {
-        // Recalcular total automaticamente en PHP
-        $total = $v1 + $v2 + $v3;
+        $total = $resultado['datos']['total'];
 
         $stmt_update = $pdo->prepare(
             'UPDATE puntajes
@@ -77,9 +60,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         );
         $stmt_update->execute([
             ':id_jugador' => $id_jugador,
-            ':p1'         => $v1,
-            ':p2'         => $v2,
-            ':p3'         => $v3,
+            ':p1'         => $resultado['datos']['v1'],
+            ':p2'         => $resultado['datos']['v2'],
+            ':p3'         => $resultado['datos']['v3'],
             ':total'      => $total,
             ':fecha'      => $fecha,
             ':id_puntaje' => $id_puntaje,
@@ -102,15 +85,7 @@ require_once __DIR__ . '/templates/nav.php';
         <p class="text-sm text-zinc-300 mt-2">Actualiza los valores; el total se recalculara automaticamente.</p>
     </div>
 
-    <?php if (!empty($errores)): ?>
-        <div class="mb-6 rounded border-2 border-rose-400 bg-rose-950 p-4 text-sm font-bold text-rose-100 shadow-[4px_4px_0px_#fb7185]">
-            <ul class="list-disc list-inside space-y-1">
-                <?php foreach ($errores as $error): ?>
-                    <li><?php echo limpiar_texto($error); ?></li>
-                <?php endforeach; ?>
-            </ul>
-        </div>
-    <?php endif; ?>
+    <?php require __DIR__ . '/templates/errores.php'; ?>
 
     <form method="post" action="puntajes_editar.php" class="rounded border-2 border-cyan-400 bg-zinc-900 p-6 space-y-5 shadow-[6px_6px_0px_#d946ef]">
         <input type="hidden" name="id_puntaje" value="<?php echo (int) $id_puntaje; ?>">

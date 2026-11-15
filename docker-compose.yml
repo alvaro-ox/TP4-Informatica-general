@@ -1,0 +1,65 @@
+# Configuracion de Docker Compose para ejecutar el proyecto sin XAMPP
+
+services:
+  # Servicio web con PHP 8.2 y Apache
+  web:
+    build: .
+    container_name: contrareloj_web
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/html
+    environment:
+      DB_HOST: db
+      DB_NAME: contrareloj_abm
+      DB_USER: root
+      DB_PASS: ""
+    depends_on:
+      - db
+    networks:
+      - red_abm
+    restart: unless-stopped
+
+  # Servicio de base de datos MariaDB con inicializacion automatica del SQL
+  db:
+    image: mariadb:10.11
+    container_name: contrareloj_db
+    environment:
+      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: "yes"
+      MARIADB_DATABASE: contrareloj_abm
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./database/videojuegos_abm.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - red_abm
+    restart: unless-stopped
+
+  # Panel phpMyAdmin para administrar la base de datos desde el navegador
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: contrareloj_phpmyadmin
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: db
+      PMA_USER: root
+      PMA_PASSWORD: ""
+    depends_on:
+      - db
+    networks:
+      - red_abm
+    restart: unless-stopped
+
+volumes:
+  db_data:
+
+networks:
+  red_abm:
+    driver: bridge

@@ -13,35 +13,16 @@ $p3 = '0';
 $fecha = date('Y-m-d');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $id_jugador = filter_input(INPUT_POST, 'id_jugador', FILTER_VALIDATE_INT) ?: 0;
-    $p1 = trim($_POST['puntaje_juego_1'] ?? '0');
-    $p2 = trim($_POST['puntaje_juego_2'] ?? '0');
-    $p3 = trim($_POST['puntaje_juego_3'] ?? '0');
-    $fecha = trim($_POST['fecha'] ?? '');
-
-    // Verificar que el jugador seleccionado exista en la tabla jugadores
-    $stmt_jug = $pdo->prepare('SELECT id_jugador FROM jugadores WHERE id_jugador = :id');
-    $stmt_jug->execute([':id' => $id_jugador]);
-    if (!$stmt_jug->fetch()) {
-        $errores[] = 'Debes seleccionar un jugador valido.';
-    }
-
-    // Validar los tres puntajes como enteros mayores o iguales a cero
-    $v1 = filter_var($p1, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
-    $v2 = filter_var($p2, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
-    $v3 = filter_var($p3, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
-
-    if ($v1 === false || $v2 === false || $v3 === false) {
-        $errores[] = 'Todos los puntajes deben ser numeros enteros iguales o mayores a 0.';
-    }
-
-    if (!validar_fecha($fecha)) {
-        $errores[] = 'La fecha ingresada no es valida.';
-    }
+    $resultado = validar_datos_puntaje($pdo, $_POST);
+    $errores = $resultado['errores'];
+    $id_jugador = $resultado['datos']['id_jugador'];
+    $p1 = $resultado['datos']['p1'];
+    $p2 = $resultado['datos']['p2'];
+    $p3 = $resultado['datos']['p3'];
+    $fecha = $resultado['datos']['fecha'];
 
     if (empty($errores)) {
-        // Calculo automatico del total en el servidor
-        $total = $v1 + $v2 + $v3;
+        $total = $resultado['datos']['total'];
 
         $stmt = $pdo->prepare(
             'INSERT INTO puntajes (id_jugador, puntaje_juego_1, puntaje_juego_2, puntaje_juego_3, total, fecha)
@@ -49,9 +30,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         );
         $stmt->execute([
             ':id_jugador' => $id_jugador,
-            ':p1'         => $v1,
-            ':p2'         => $v2,
-            ':p3'         => $v3,
+            ':p1'         => $resultado['datos']['v1'],
+            ':p2'         => $resultado['datos']['v2'],
+            ':p3'         => $resultado['datos']['v3'],
             ':total'      => $total,
             ':fecha'      => $fecha,
         ]);
@@ -78,15 +59,7 @@ require_once __DIR__ . '/templates/nav.php';
             No hay jugadores registrados todavia. Primero debes <a href="alta.php" class="underline text-cyan-300">dar de alta un jugador</a> antes de cargar puntajes.
         </div>
     <?php else: ?>
-        <?php if (!empty($errores)): ?>
-            <div class="mb-6 rounded border-2 border-rose-400 bg-rose-950 p-4 text-sm font-bold text-rose-100 shadow-[4px_4px_0px_#fb7185]">
-                <ul class="list-disc list-inside space-y-1">
-                    <?php foreach ($errores as $error): ?>
-                        <li><?php echo limpiar_texto($error); ?></li>
-                    <?php endforeach; ?>
-                </ul>
-            </div>
-        <?php endif; ?>
+        <?php require __DIR__ . '/templates/errores.php'; ?>
 
         <form method="post" action="puntajes_alta.php" class="rounded border-2 border-cyan-400 bg-zinc-900 p-6 space-y-5 shadow-[6px_6px_0px_#d946ef]">
             <div>

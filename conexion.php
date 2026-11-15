@@ -6,11 +6,11 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Configuracion de la base de datos MySQL (valores por defecto compatibles con XAMPP/LAMPP)
-define('DB_HOST', '127.0.0.1');
-define('DB_NAME', 'contrareloj_abm');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+// Configuracion de la base de datos MySQL (toma variables de entorno en Docker o valores por defecto en XAMPP)
+define('DB_HOST', getenv('DB_HOST') ?: '127.0.0.1');
+define('DB_NAME', getenv('DB_NAME') ?: 'contrareloj_abm');
+define('DB_USER', getenv('DB_USER') ?: 'root');
+define('DB_PASS', getenv('DB_PASS') !== false ? getenv('DB_PASS') : '');
 define('DB_CHARSET', 'utf8mb4');
 
 /**
@@ -89,4 +89,89 @@ function redirigir(string $ruta): void
 {
     header('Location: ' . $ruta);
     exit;
+}
+
+/**
+ * Valida y normaliza los datos enviados para un jugador (alta o edicion).
+ */
+function validar_datos_jugador(array $datos): array
+{
+    $errores = [];
+    $nombre = trim($datos['nombre'] ?? '');
+    $edad_raw = trim($datos['edad'] ?? '');
+    $fecha = trim($datos['fecha'] ?? '');
+
+    if ($nombre === '' || mb_strlen($nombre) > 100) {
+        $errores[] = 'El nombre es obligatorio y debe tener como maximo 100 caracteres.';
+    }
+
+    $edad_validada = filter_var($edad_raw, FILTER_VALIDATE_INT, [
+        'options' => ['min_range' => 1, 'max_range' => 120],
+    ]);
+    if ($edad_validada === false) {
+        $errores[] = 'La edad debe ser un numero entero valido entre 1 y 120.';
+    }
+
+    if (!validar_fecha($fecha)) {
+        $errores[] = 'La fecha ingresada no es valida.';
+    }
+
+    return [
+        'datos' => [
+            'nombre' => $nombre,
+            'edad'   => $edad_raw,
+            'edad_int' => $edad_validada,
+            'fecha'  => $fecha,
+        ],
+        'errores' => $errores,
+    ];
+}
+
+/**
+ * Valida los datos de un puntaje, verifica el jugador y calcula el total.
+ */
+function validar_datos_puntaje(PDO $pdo, array $datos): array
+{
+    $errores = [];
+    $id_jugador = filter_var($datos['id_jugador'] ?? 0, FILTER_VALIDATE_INT) ?: 0;
+    $p1 = trim($datos['puntaje_juego_1'] ?? '0');
+    $p2 = trim($datos['puntaje_juego_2'] ?? '0');
+    $p3 = trim($datos['puntaje_juego_3'] ?? '0');
+    $fecha = trim($datos['fecha'] ?? '');
+
+    // Verificar que el jugador seleccionado exista en la tabla jugadores
+    $stmt_jug = $pdo->prepare('SELECT id_jugador FROM jugadores WHERE id_jugador = :id');
+    $stmt_jug->execute([':id' => $id_jugador]);
+    if (!$stmt_jug->fetch()) {
+        $errores[] = 'Debes seleccionar un jugador valido.';
+    }
+
+    $v1 = filter_var($p1, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+    $v2 = filter_var($p2, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+    $v3 = filter_var($p3, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+
+    if ($v1 === false || $v2 === false || $v3 === false) {
+        $errores[] = 'Todos los puntajes deben ser numeros enteros iguales o mayores a 0.';
+    }
+
+    if (!validar_fecha($fecha)) {
+        $errores[] = 'La fecha ingresada no es valida.';
+    }
+
+    $total = ($v1 !== false && $v2 !== false && $v3 !== false) ? ($v1 + $v2 + $v3) : 0;
+
+    return [
+        'datos' => [
+            'id_jugador' => $id_jugador,
+            'p1'         => $p1,
+            'p2'         => $p2,
+            'p3'         => $p3,
+            'v1'         => $v1,
+            'v2'         => $v2,
+            'v3'         => $v3,
+            'total'      => $total,
+            'fecha'      => $fecha,
+        ],
+        'errores' => $errores,
+    ];
 }

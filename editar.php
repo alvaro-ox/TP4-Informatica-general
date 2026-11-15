@@ -31,25 +31,11 @@ $edad = (string) $jugador['edad'];
 $fecha = $jugador['fecha'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nombre = trim($_POST['nombre'] ?? '');
-    $edad_raw = trim($_POST['edad'] ?? '');
-    $fecha = trim($_POST['fecha'] ?? '');
-
-    if ($nombre === '' || mb_strlen($nombre) > 100) {
-        $errores[] = 'El nombre es obligatorio y debe tener como maximo 100 caracteres.';
-    }
-
-    $edad_validada = filter_var($edad_raw, FILTER_VALIDATE_INT, [
-        'options' => ['min_range' => 1, 'max_range' => 120],
-    ]);
-    if ($edad_validada === false) {
-        $errores[] = 'La edad debe ser un numero entero valido entre 1 y 120.';
-    }
-    $edad = $edad_raw;
-
-    if (!validar_fecha($fecha)) {
-        $errores[] = 'La fecha ingresada no es valida.';
-    }
+    $resultado = validar_datos_jugador($_POST);
+    $errores = $resultado['errores'];
+    $nombre = $resultado['datos']['nombre'];
+    $edad = $resultado['datos']['edad'];
+    $fecha = $resultado['datos']['fecha'];
 
     if (empty($errores)) {
         $stmt_update = $pdo->prepare(
@@ -57,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         );
         $stmt_update->execute([
             ':nombre' => $nombre,
-            ':edad'   => $edad_validada,
+            ':edad'   => $resultado['datos']['edad_int'],
             ':fecha'  => $fecha,
             ':id'     => $id_jugador,
         ]);
@@ -79,15 +65,7 @@ require_once __DIR__ . '/templates/nav.php';
         <p class="text-sm text-zinc-300 mt-2">Modifica los datos del jugador y guarda los cambios.</p>
     </div>
 
-    <?php if (!empty($errores)): ?>
-        <div class="mb-6 rounded border-2 border-rose-400 bg-rose-950 p-4 text-sm font-bold text-rose-100 shadow-[4px_4px_0px_#fb7185]">
-            <ul class="list-disc list-inside space-y-1">
-                <?php foreach ($errores as $error): ?>
-                    <li><?php echo limpiar_texto($error); ?></li>
-                <?php endforeach; ?>
-            </ul>
-        </div>
-    <?php endif; ?>
+    <?php require __DIR__ . '/templates/errores.php'; ?>
 
     <form method="post" action="editar.php" class="rounded border-2 border-cyan-400 bg-zinc-900 p-6 space-y-5 shadow-[6px_6px_0px_#d946ef]">
         <input type="hidden" name="id_jugador" value="<?php echo (int) $id_jugador; ?>">
