@@ -7,32 +7,57 @@ $jugadores = $pdo->query('SELECT id_jugador, nombre FROM jugadores ORDER BY nomb
 
 $errores = [];
 $id_jugador = filter_input(INPUT_GET, 'id_jugador', FILTER_VALIDATE_INT) ?: 0;
+$personaje = 'persona';
 $p1 = '0';
 $p2 = '0';
 $p3 = '0';
 $fecha = date('Y-m-d');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $resultado = validar_datos_puntaje($pdo, $_POST);
-    $errores = $resultado['errores'];
-    $id_jugador = $resultado['datos']['id_jugador'];
-    $p1 = $resultado['datos']['p1'];
-    $p2 = $resultado['datos']['p2'];
-    $p3 = $resultado['datos']['p3'];
-    $fecha = $resultado['datos']['fecha'];
+    $id_jugador = filter_input(INPUT_POST, 'id_jugador', FILTER_VALIDATE_INT) ?: 0;
+    $personaje = trim($_POST['personaje'] ?? '');
+    $p1 = trim($_POST['puntaje_juego_1'] ?? '0');
+    $p2 = trim($_POST['puntaje_juego_2'] ?? '0');
+    $p3 = trim($_POST['puntaje_juego_3'] ?? '0');
+    $fecha = trim($_POST['fecha'] ?? '');
+
+    // Verificar que el jugador seleccionado exista en la tabla jugadores
+    $stmt_jug = $pdo->prepare('SELECT id_jugador FROM jugadores WHERE id_jugador = :id');
+    $stmt_jug->execute([':id' => $id_jugador]);
+    if (!$stmt_jug->fetch()) {
+        $errores[] = 'Debes seleccionar un jugador valido.';
+    }
+
+    if (!in_array($personaje, lista_personajes(), true)) {
+        $errores[] = 'Debes seleccionar un personaje valido.';
+    }
+
+    // Validar los tres puntajes como enteros mayores o iguales a cero
+    $v1 = filter_var($p1, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+    $v2 = filter_var($p2, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+    $v3 = filter_var($p3, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+
+    if ($v1 === false || $v2 === false || $v3 === false) {
+        $errores[] = 'Todos los puntajes deben ser numeros enteros iguales o mayores a 0.';
+    }
+
+    if (!validar_fecha($fecha)) {
+        $errores[] = 'La fecha ingresada no es valida.';
+    }
 
     if (empty($errores)) {
         $total = $resultado['datos']['total'];
 
         $stmt = $pdo->prepare(
-            'INSERT INTO puntajes (id_jugador, puntaje_juego_1, puntaje_juego_2, puntaje_juego_3, total, fecha)
-             VALUES (:id_jugador, :p1, :p2, :p3, :total, :fecha)'
+            'INSERT INTO puntajes (id_jugador, personaje, puntaje_juego_1, puntaje_juego_2, puntaje_juego_3, total, fecha)
+             VALUES (:id_jugador, :personaje, :p1, :p2, :p3, :total, :fecha)'
         );
         $stmt->execute([
             ':id_jugador' => $id_jugador,
-            ':p1'         => $resultado['datos']['v1'],
-            ':p2'         => $resultado['datos']['v2'],
-            ':p3'         => $resultado['datos']['v3'],
+            ':personaje'  => $personaje,
+            ':p1'         => $v1,
+            ':p2'         => $v2,
+            ':p3'         => $v3,
             ':total'      => $total,
             ':fecha'      => $fecha,
         ]);
@@ -74,6 +99,22 @@ require_once __DIR__ . '/templates/nav.php';
                     <?php foreach ($jugadores as $jug): ?>
                         <option value="<?php echo (int) $jug['id_jugador']; ?>" <?php echo ((int) $jug['id_jugador'] === $id_jugador) ? 'selected' : ''; ?>>
                             <?php echo limpiar_texto($jug['nombre']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div>
+                <label for="personaje" class="block text-xs font-bold uppercase tracking-wider text-cyan-300 mb-1.5">Personaje</label>
+                <select
+                    id="personaje"
+                    name="personaje"
+                    required
+                    class="w-full rounded border-2 border-zinc-600 bg-zinc-950 px-3 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none"
+                >
+                    <?php foreach (lista_personajes() as $opcion): ?>
+                        <option value="<?php echo limpiar_texto($opcion); ?>" <?php echo ($opcion === $personaje) ? 'selected' : ''; ?>>
+                            <?php echo limpiar_texto(ucfirst($opcion)); ?>
                         </option>
                     <?php endforeach; ?>
                 </select>

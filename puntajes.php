@@ -15,7 +15,7 @@ if (!in_array($orden, ['total', 'fecha'], true)) {
 }
 
 // Construir consulta con JOIN a jugadores
-$sql = 'SELECT p.id_puntaje, p.id_jugador, j.nombre AS nombre_jugador,
+$sql = 'SELECT p.id_puntaje, p.id_jugador, j.nombre AS nombre_jugador, j.alias, p.personaje,
                p.puntaje_juego_1, p.puntaje_juego_2, p.puntaje_juego_3,
                p.total, p.fecha
         FROM puntajes p
@@ -88,6 +88,7 @@ require_once __DIR__ . '/templates/nav.php';
             <tr>
                 <th class="px-4 py-3.5 text-left font-bold"><?php echo ($orden === 'total') ? 'Pos.' : 'ID'; ?></th>
                 <th class="px-4 py-3.5 text-left font-bold">Jugador</th>
+                <th class="px-4 py-3.5 text-left font-bold">Personaje</th>
                 <th class="px-4 py-3.5 text-right font-bold">Juego 1</th>
                 <th class="px-4 py-3.5 text-right font-bold">Juego 2</th>
                 <th class="px-4 py-3.5 text-right font-bold">Juego 3</th>
@@ -99,7 +100,7 @@ require_once __DIR__ . '/templates/nav.php';
         <tbody class="divide-y divide-zinc-800">
             <?php if (empty($puntajes)): ?>
                 <tr>
-                    <td colspan="8" class="px-4 py-8 text-center text-zinc-300">
+                    <td colspan="9" class="px-4 py-8 text-center text-zinc-300">
                         No hay puntajes registrados para los criterios seleccionados.
                     </td>
                 </tr>
@@ -117,8 +118,10 @@ require_once __DIR__ . '/templates/nav.php';
                             <?php endif; ?>
                         </td>
                         <td class="px-4 py-3.5 font-bold text-white">
-                            <?php echo limpiar_texto($fila['nombre_jugador']); ?>
+                            <?php echo limpiar_texto($fila['alias']); ?>
+                            <span class="block text-xs font-normal text-zinc-400"><?php echo limpiar_texto($fila['nombre_jugador']); ?></span>
                         </td>
+                        <td class="px-4 py-3.5 text-zinc-200 capitalize"><?php echo limpiar_texto($fila['personaje']); ?></td>
                         <td class="px-4 py-3.5 text-right text-zinc-200 tabular-nums"><?php echo number_format((int) $fila['puntaje_juego_1'], 0, ',', '.'); ?></td>
                         <td class="px-4 py-3.5 text-right text-zinc-200 tabular-nums"><?php echo number_format((int) $fila['puntaje_juego_2'], 0, ',', '.'); ?></td>
                         <td class="px-4 py-3.5 text-right text-zinc-200 tabular-nums"><?php echo number_format((int) $fila['puntaje_juego_3'], 0, ',', '.'); ?></td>
