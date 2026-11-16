@@ -12,8 +12,9 @@ $sql = 'SELECT j.id_jugador, j.nombre, j.alias, j.edad, j.fecha, COUNT(p.id_punt
 $parametros = [];
 
 if ($busqueda !== '') {
-    $sql .= ' WHERE j.nombre LIKE :busqueda OR j.alias LIKE :busqueda';
-    $parametros[':busqueda'] = '%' . $busqueda . '%';
+    $sql .= ' WHERE j.nombre LIKE :busqueda_nombre OR j.alias LIKE :busqueda_alias';
+    $parametros[':busqueda_nombre'] = '%' . $busqueda . '%';
+    $parametros[':busqueda_alias'] = '%' . $busqueda . '%';
 }
 
 $sql .= ' GROUP BY j.id_jugador, j.nombre, j.alias, j.edad, j.fecha
