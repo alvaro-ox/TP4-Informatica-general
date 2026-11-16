@@ -51,3 +51,6 @@ Aplicacion web dinamica que implementa un ABM completo (Alta, Baja, Modificacion
 
 5. **Abrir la aplicacion**:
    - Ingresar desde el navegador a `http://localhost/TP4-Informatica-general/index.php`.
+   - Se mostrará la pantalla principal con el listado de jugadores registrados.
+   - Desde la barra de navegación se podrá acceder al registro de nuevos jugadores, la administración de puntajes y el ranking.
+   - El sistema permite realizar las operaciones de Alta, Baja, Modificación y Listado sobre los registros almacenados.
